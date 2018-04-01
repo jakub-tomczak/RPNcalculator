@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">RPNcalculator</string>
+    <string name="multiline">some\ntext\nin\nthis\nwierd\nframe\nis\nscrollable</string>
+</resources>
