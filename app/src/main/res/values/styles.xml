@@ -9,10 +9,14 @@
         <item name="android:colorBackground">?android:attr/colorButtonNormal</item>
     </style>
 
-    <style name="Widget.AppCompat.Button.Borderless.My">
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">wrap_content</item>
+    <style name="Widget.AppCompat.Button.Borderless.Digits">
         <item name="android:background">@android:color/holo_orange_light</item>
+    </style>
+    <style name="Widget.AppCompat.Button.Borderless.Command">
+        <item name="android:background">@android:color/holo_blue_light</item>
+    </style>
+    <style name="Widget.AppCompat.Button.Borderless.Operators">
+        <item name="android:background">@android:color/holo_green_dark</item>
     </style>
 
 </resources>
