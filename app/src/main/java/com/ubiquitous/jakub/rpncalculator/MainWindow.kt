@@ -58,9 +58,9 @@ class MainWindow : AppCompatActivity() {
     }
 
     fun init() {
-        operandsButtons = setOf(buttonPower, buttonAdd, buttonMultiply, buttonDivide, buttonSubstract, buttonSqrt)
-        commandButtons = setOf(buttonUndo, buttonClear, buttonDrop, buttonEnter, buttonSettings)
-        digitButtons = setOf(button0, button1, button2, button3, button4, button5, button6, button7, button8, button9, buttonSign)
+        operandsButtons = setOf(buttonPower, buttonAdd, buttonMultiply, buttonDivide, buttonSubstract, buttonSqrt, buttonSign, buttonDot)
+        commandButtons = setOf(buttonUndo, buttonClear, buttonDrop, buttonEnter, buttonSettings, buttonSwap)
+        digitButtons = setOf(button0, button1, button2, button3, button4, button5, button6, button7, button8, button9)
         stackField.isEnabled = false
         stackField.isLongClickable = false
         stackField.isClickable = false
@@ -72,12 +72,23 @@ class MainWindow : AppCompatActivity() {
         buttonClear.setOnLongClickListener { _ -> clearAll() }
         buttonUndo.setOnLongClickListener { _ -> undoStack() }
         this.getPreferences(android.content.Context.MODE_PRIVATE).registerOnSharedPreferenceChangeListener(listener())
+        formatter = DecimalFormat("#.##E0")
     }
 
     private fun listener(): SharedPreferences.OnSharedPreferenceChangeListener? {
-        val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
         colorButtons()
+        setNumberFormat()
         return null
+    }
+
+    private fun setNumberFormat() {
+
+        val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
+        try{
+            formatter = DecimalFormat(preferences.getString("stackNumberFormat","#.##E0"))
+        }catch(e:NumberFormatException){
+            errorHandler?.displayError(RecoverableException("Wrong number format!"), this.applicationContext)
+        }
     }
 
 
@@ -193,11 +204,11 @@ class MainWindow : AppCompatActivity() {
         return true
     }
 
-
+    var formatter = DecimalFormat()
     fun updateStack(clearInput: Boolean = true) {
         lastStackState.clear()
         lastStackState.addAll(stack)
-        val values = stack.takeLast(4).map { it -> DecimalFormat("#.##E0").format(it) }.mapIndexed { ind, it -> "${ind + 1}: $it" }.joinToString(separator = "\n", postfix = "")
+        val values = stack.takeLast(4).map { it -> formatter.format(it) }.mapIndexed { ind, it -> "${ind + 1}: $it" }.joinToString(separator = "\n", postfix = "")
         stackField.setText(values)
         if (clearInput)
             clearInput()
@@ -209,6 +220,10 @@ class MainWindow : AppCompatActivity() {
                     ?: throw IllegalArgumentException("Button with id ${operationButtonID} has no mapping to operationType clearAll!")
             if ((it.map[operationButtonID]?.arity ?: 0) > stack.size) {
                 throw RecoverableException("Zbyt mało argumentów na stosie do wykonania operacji!")
+            }
+
+            if(!inputField.text.isEmpty()){
+                enterButton(View(this.applicationContext))
             }
             stack.takeLastAndPop(operation.arity).arithmeticOperation(operation.operationType).putOnStack(stack)
             inputField.setText(stack.takeLast(1).toString())

@@ -1,10 +1,6 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <SwitchPreference
-        android:defaultValue="true"
-        android:key="example_switch"
-        android:summary="@string/pref_description_social_recommendations"
-        android:title="@string/pref_title_social_recommendations" />
+
     <!-- NOTE: EditTextPreference accepts EditText attributes. -->
     <!-- NOTE: EditTextPreference's summary should be set to its value by the activity code. -->
     <EditTextPreference
@@ -22,6 +18,7 @@
         android:title="@string/pref_digit_color"
         android:defaultValue="@android:color/holo_orange_light"
         />
+
     <com.rarepebble.colorpicker.ColorPreference
         android:key="operandsColor"
         android:title="@string/pref_operands_color"
