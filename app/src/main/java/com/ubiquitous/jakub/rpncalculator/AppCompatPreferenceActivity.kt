@@ -75,10 +75,6 @@ abstract class AppCompatPreferenceActivity : PreferenceActivity() {
         delegate.onStop()
     }
 
-    override fun finish() {
-        super.finish()
-    }
-
     override fun onDestroy() {
         super.onDestroy()
         delegate.onDestroy()

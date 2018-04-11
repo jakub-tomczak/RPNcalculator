@@ -1,12 +1,10 @@
 package com.ubiquitous.jakub.rpncalculator
 
 import android.content.Intent
-import android.content.SharedPreferences
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import android.os.PersistableBundle
+import android.preference.PreferenceActivity
 import android.preference.PreferenceManager
-import android.util.Log
 import android.view.View
 import android.widget.Button
 import com.ubiquitous.jakub.rpncalculator.R.id.*
@@ -24,7 +22,6 @@ class MainWindow : AppCompatActivity() {
             putSerializable("stack", stack)
             putSerializable("lastStackState", lastStackState)
             putSerializable("lastInputFieldOperation", lastInputFieldOperation)
-
         }
         super.onSaveInstanceState(outState)
 
@@ -45,49 +42,53 @@ class MainWindow : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main_portrait)
-
         init()
-        colorButtons()
+        setButtonsColors()
+        setNumberFormat()
     }
 
-    private fun colorButtons() {
+    private fun setButtonsColors() {
         val preferences = PreferenceManager.getDefaultSharedPreferences(this.applicationContext)
-        digitButtons?.forEach{ it -> it.setBackgroundColor(preferences.getInt("digitsColor", 0xff)) }
-        operandsButtons?.forEach{ it -> it.setBackgroundColor(preferences.getInt("operandsColor", 0xff)) }
-        commandButtons?.forEach{ it -> it.setBackgroundColor(preferences.getInt("commandsColor", 0xff)) }
+        digitButtons?.forEach{ it -> it.setBackgroundColor(preferences.getInt("digitsColor", DEFAULT_COLOR)) }
+        operandsButtons?.forEach{ it -> it.setBackgroundColor(preferences.getInt("operandsColor", DEFAULT_COLOR)) }
+        commandButtons?.forEach{ it -> it.setBackgroundColor(preferences.getInt("commandsColor", DEFAULT_COLOR)) }
     }
 
     fun init() {
         operandsButtons = setOf(buttonPower, buttonAdd, buttonMultiply, buttonDivide, buttonSubstract, buttonSqrt, buttonSign, buttonDot)
         commandButtons = setOf(buttonUndo, buttonClear, buttonDrop, buttonEnter, buttonSettings, buttonSwap)
         digitButtons = setOf(button0, button1, button2, button3, button4, button5, button6, button7, button8, button9)
-        stackField.isEnabled = false
-        stackField.isLongClickable = false
-        stackField.isClickable = false
-        inputField.isEnabled = false
-        inputField.isLongClickable = false
-        inputField.isClickable = false
+
         errorHandler = ErrorHandler(errorField)
         messagesHandler = MessageHandler(this.applicationContext)
+
         buttonClear.setOnLongClickListener { _ -> clearAll() }
         buttonUndo.setOnLongClickListener { _ -> undoStack() }
-        this.getPreferences(android.content.Context.MODE_PRIVATE).registerOnSharedPreferenceChangeListener(listener())
-        formatter = DecimalFormat("#.##E0")
     }
 
-    private fun listener(): SharedPreferences.OnSharedPreferenceChangeListener? {
-        colorButtons()
-        setNumberFormat()
-        return null
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if(requestCode == SETTINGS_RESULT_CODE)
+        {
+            setButtonsColors()
+            setNumberFormat()
+        }
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     private fun setNumberFormat() {
-
         val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
         try{
-            formatter = DecimalFormat(preferences.getString("stackNumberFormat","#.##E0"))
-        }catch(e:NumberFormatException){
-            errorHandler?.displayError(RecoverableException("Wrong number format!"), this.applicationContext)
+            val usersFormat = preferences.getString(PREF_NAME_STACK_NUMBER, DEFAULT_NUMBER_FORMAT)
+            checkValue(usersFormat) //throws an exception if format is wrong
+            formatter.applyPattern(usersFormat)
+            updateStack()
+        }catch(e:Exception){
+            when(e){
+                is NumberFormatException, is IllegalArgumentException -> {
+                    errorHandler?.displayError(RecoverableException(getString(R.string.number_format_exception)), this.applicationContext)
+                }
+                else -> errorHandler?.displayError(e, this.applicationContext)
+            }
         }
     }
 
@@ -109,7 +110,9 @@ class MainWindow : AppCompatActivity() {
 
     fun settingsButton(view: View){
         val i = Intent(this, SettingsWindow::class.java)
-        startActivityForResult(i, 1000)
+        i.putExtra(PreferenceActivity.EXTRA_SHOW_FRAGMENT, SettingsWindow.GeneralPreferenceFragment::class.java.name)
+        startActivityForResult(i, SETTINGS_RESULT_CODE)
+        startActivity(i)
     }
 
     fun switchSign() {
@@ -122,7 +125,7 @@ class MainWindow : AppCompatActivity() {
         }
     }
 
-    fun enterButton(view: View) {
+    fun enterButton(view : View) {
         val newValue = inputField.text
         try {
             stack.add(newValue.toString().toDouble())
@@ -132,7 +135,6 @@ class MainWindow : AppCompatActivity() {
         updateStack()
     }
 
-    private var clearInfoDisplayed = false
     fun clearButton(view: View) {
         clearInput()
         if (!clearInfoDisplayed) {
@@ -204,7 +206,7 @@ class MainWindow : AppCompatActivity() {
         return true
     }
 
-    var formatter = DecimalFormat()
+
     fun updateStack(clearInput: Boolean = true) {
         lastStackState.clear()
         lastStackState.addAll(stack)
@@ -218,19 +220,22 @@ class MainWindow : AppCompatActivity() {
         OperationTranslator().let {
             val operation = it.map[operationButtonID]
                     ?: throw IllegalArgumentException("Button with id ${operationButtonID} has no mapping to operationType clearAll!")
+            //check if we can add number to the stack
+            if(!inputField.text.isEmpty()){
+                enterButton(View(applicationContext))
+            }
             if ((it.map[operationButtonID]?.arity ?: 0) > stack.size) {
                 throw RecoverableException("Zbyt mało argumentów na stosie do wykonania operacji!")
             }
 
-            if(!inputField.text.isEmpty()){
-                enterButton(View(this.applicationContext))
-            }
             stack.takeLastAndPop(operation.arity).arithmeticOperation(operation.operationType).putOnStack(stack)
             inputField.setText(stack.takeLast(1).toString())
             updateStack()
         }
     }
 
+    private var clearInfoDisplayed = false
+    val formatter = DecimalFormat()
     var stack = Stack<Double>()
     var lastStackState = Stack<Double>()
     var lastInputFieldOperation = Stack<Int>()

@@ -13,6 +13,7 @@
         based on your message history
     </string>
 
+    <string name="pref_name_stack_number_format">stackNumberFormat</string>
     <string name="pref_title_display_name">Stack\'s number format</string>
     <string name="pref_default_display_name">#.##E0</string>
 
@@ -82,4 +83,5 @@
     <string name="multiply_sign">✕</string>
     <string name="long_minus_sign">−</string>
     <string name="square_root_sign">√</string>
+    <string name="number_format_exception">Wrong number format!</string>
 </resources>

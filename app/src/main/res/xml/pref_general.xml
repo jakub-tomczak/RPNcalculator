@@ -7,7 +7,7 @@
         android:capitalize="words"
         android:defaultValue="@string/pref_default_display_name"
         android:inputType="textCapWords"
-        android:key="stackNumberFormat"
+        android:key="@string/pref_name_stack_number_format"
         android:maxLines="1"
         android:selectAllOnFocus="true"
         android:singleLine="true"
