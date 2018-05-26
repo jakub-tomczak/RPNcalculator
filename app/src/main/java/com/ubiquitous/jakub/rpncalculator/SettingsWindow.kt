@@ -110,8 +110,12 @@ class SettingsWindow : AppCompatPreferenceActivity() {
         private val sBindPreferenceSummaryToValueListener = OnPreferenceChangeListener { preference, value ->
             val stringValue = value.toString()
             preference.summary = stringValue
-            if (preference.key == PREF_NAME_STACK_NUMBER) {
-                checkValue(value.toString())
+            try{
+                if (preference.key == PREF_NAME_STACK_NUMBER) {
+                    checkValue(value.toString())
+                }
+            }catch(e : NumberFormatException){
+                false
             }
             true
         }

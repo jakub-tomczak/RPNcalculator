@@ -17,7 +17,7 @@ import kotlin.math.sqrt
 
 
 class MainWindow : AppCompatActivity() {
-    override fun onSaveInstanceState(outState: Bundle){
+    override fun onSaveInstanceState(outState: Bundle) {
         outState.run {
             putSerializable("stack", stack)
             putSerializable("lastStackState", lastStackState)
@@ -31,9 +31,9 @@ class MainWindow : AppCompatActivity() {
         super.onRestoreInstanceState(savedInstanceState)
         init()
 
-        savedInstanceState?.run{
+        savedInstanceState?.run {
             stack = getSerializable("stack") as Stack<Double>
-            lastStackState = getSerializable("lastStackState") as Stack<Double>
+            lastStackState = getSerializable("lastStackState") as Stack<Stack<Double>>
             lastInputFieldOperation = getSerializable("lastInputFieldOperation") as Stack<Int>
         }
 
@@ -49,9 +49,9 @@ class MainWindow : AppCompatActivity() {
 
     private fun setButtonsColors() {
         val preferences = PreferenceManager.getDefaultSharedPreferences(this.applicationContext)
-        digitButtons?.forEach{ it -> it.setBackgroundColor(preferences.getInt("digitsColor", DEFAULT_COLOR)) }
-        operandsButtons?.forEach{ it -> it.setBackgroundColor(preferences.getInt("operandsColor", DEFAULT_COLOR)) }
-        commandButtons?.forEach{ it -> it.setBackgroundColor(preferences.getInt("commandsColor", DEFAULT_COLOR)) }
+        digitButtons?.forEach { it -> it.setBackgroundColor(preferences.getInt("digitsColor", DEFAULT_COLOR)) }
+        operandsButtons?.forEach { it -> it.setBackgroundColor(preferences.getInt("operandsColor", DEFAULT_COLOR)) }
+        commandButtons?.forEach { it -> it.setBackgroundColor(preferences.getInt("commandsColor", DEFAULT_COLOR)) }
     }
 
     fun init() {
@@ -67,8 +67,7 @@ class MainWindow : AppCompatActivity() {
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if(requestCode == SETTINGS_RESULT_CODE)
-        {
+        if (requestCode == SETTINGS_RESULT_CODE) {
             setButtonsColors()
             setNumberFormat()
         }
@@ -77,13 +76,13 @@ class MainWindow : AppCompatActivity() {
 
     private fun setNumberFormat() {
         val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
-        try{
+        try {
             val usersFormat = preferences.getString(PREF_NAME_STACK_NUMBER, DEFAULT_NUMBER_FORMAT)
             checkValue(usersFormat) //throws an exception if format is wrong
             formatter.applyPattern(usersFormat)
             updateStack()
-        }catch(e:Exception){
-            when(e){
+        } catch (e: Exception) {
+            when (e) {
                 is NumberFormatException, is IllegalArgumentException -> {
                     errorHandler?.displayError(RecoverableException(getString(R.string.number_format_exception)), this.applicationContext)
                 }
@@ -108,7 +107,7 @@ class MainWindow : AppCompatActivity() {
         lastInputFieldOperation.push(view.id)
     }
 
-    fun settingsButton(view: View){
+    fun settingsButton(view: View) {
         val i = Intent(this, SettingsWindow::class.java)
         i.putExtra(PreferenceActivity.EXTRA_SHOW_FRAGMENT, SettingsWindow.GeneralPreferenceFragment::class.java.name)
         startActivityForResult(i, SETTINGS_RESULT_CODE)
@@ -125,7 +124,7 @@ class MainWindow : AppCompatActivity() {
         }
     }
 
-    fun enterButton(view : View) {
+    fun enterButton(view: View) {
         val newValue = inputField.text
         try {
             stack.add(newValue.toString().toDouble())
@@ -201,15 +200,21 @@ class MainWindow : AppCompatActivity() {
 
     private fun undoStack(): Boolean {
         stack.clear()
-        stack.addAll(lastStackState)
+        if (lastStackState.size < 2) {
+            updateStack()
+            //messagesHandler?.displayMessage("Brak historii")
+            return true;
+        }
+        lastStackState.pop()
+        stack.addAll(lastStackState.pop())
         updateStack(false)
         return true
     }
 
 
     fun updateStack(clearInput: Boolean = true) {
-        lastStackState.clear()
-        lastStackState.addAll(stack)
+        if (stack.size > 0 && clearInput)
+            lastStackState.push(stack.clone() as Stack<Double>)
         val values = stack.takeLast(4).map { it -> formatter.format(it) }.mapIndexed { ind, it -> "${ind + 1}: $it" }.joinToString(separator = "\n", postfix = "")
         stackField.setText(values)
         if (clearInput)
@@ -221,7 +226,7 @@ class MainWindow : AppCompatActivity() {
             val operation = it.map[operationButtonID]
                     ?: throw IllegalArgumentException("Button with id ${operationButtonID} has no mapping to operationType clearAll!")
             //check if we can add number to the stack
-            if(!inputField.text.isEmpty()){
+            if (!inputField.text.isEmpty()) {
                 enterButton(View(applicationContext))
             }
             if ((it.map[operationButtonID]?.arity ?: 0) > stack.size) {
@@ -237,13 +242,13 @@ class MainWindow : AppCompatActivity() {
     private var clearInfoDisplayed = false
     val formatter = DecimalFormat()
     var stack = Stack<Double>()
-    var lastStackState = Stack<Double>()
+    var lastStackState = Stack<Stack<Double>>()
     var lastInputFieldOperation = Stack<Int>()
     var errorHandler: ErrorHandler? = null
     var messagesHandler: MessageHandler? = null
-    var digitButtons :Set<Button>? = null
-    var commandButtons : Set<Button>? = null
-    var operandsButtons : Set<Button>? = null
+    var digitButtons: Set<Button>? = null
+    var commandButtons: Set<Button>? = null
+    var operandsButtons: Set<Button>? = null
 
 }
 
